@@ -1,7 +1,9 @@
-package dev.insannity.demo.anotations;
+package dev.insannity.demo.core.audit;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventLis
 import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.stereotype.Component;
 
-import dev.insannity.demo.Historico;
+import dev.insannity.demo.model.Historico;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -33,7 +35,9 @@ public class AuditoriaHistoricoListener extends AbstractMongoEventListener<Objec
         }
 
         try {
-            Field idField = getIdField(clazz);
+            List<Field> allFields = getAllFields(clazz);
+            
+            Field idField = getIdField(allFields);
             if (idField == null) return;
 
             idField.setAccessible(true);
@@ -44,7 +48,7 @@ public class AuditoriaHistoricoListener extends AbstractMongoEventListener<Objec
             Object entidadeAntiga = mongoTemplate.findById(id, clazz);
             if (entidadeAntiga == null) return;
 
-            Field historicoField = getHistoricoField(clazz);
+            Field historicoField = getHistoricoField(allFields);
             if (historicoField == null) return;
 
             historicoField.setAccessible(true);
@@ -62,7 +66,8 @@ public class AuditoriaHistoricoListener extends AbstractMongoEventListener<Objec
                 historicos = new java.util.ArrayList<>();
                 historicoField.set(entidadeNova, historicos);
             }
-            for (Field field : clazz.getDeclaredFields()) {
+
+            for (Field field : allFields) {
                 field.setAccessible(true);
 
                 if (field.equals(idField) || field.equals(historicoField) ||
@@ -90,8 +95,16 @@ public class AuditoriaHistoricoListener extends AbstractMongoEventListener<Objec
         }
     }
 
-    private Field getIdField(Class<?> clazz) {
-        for (Field field : clazz.getDeclaredFields()) {
+    private List<Field> getAllFields(Class<?> type) {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+        }
+        return fields;
+    }
+
+    private Field getIdField(List<Field> fields) {
+        for (Field field : fields) {
             if (field.isAnnotationPresent(Id.class) || field.getName().equalsIgnoreCase("id")) {
                 return field;
             }
@@ -99,8 +112,8 @@ public class AuditoriaHistoricoListener extends AbstractMongoEventListener<Objec
         return null;
     }
 
-    private Field getHistoricoField(Class<?> clazz) {
-        for (Field field : clazz.getDeclaredFields()) {
+    private Field getHistoricoField(List<Field> fields) {
+        for (Field field : fields) {
             if (field.getName().equalsIgnoreCase("historico") && List.class.isAssignableFrom(field.getType())) {
                 return field;
             }

@@ -1,4 +1,4 @@
-package dev.insannity.demo.anotations;
+package dev.insannity.demo.core.audit;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

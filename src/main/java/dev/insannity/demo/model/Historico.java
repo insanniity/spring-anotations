@@ -1,4 +1,4 @@
-package dev.insannity.demo;
+package dev.insannity.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
@@ -8,5 +8,4 @@ public record Historico(
     LocalDateTime data,
     String descricao
 ) {
-
 }
